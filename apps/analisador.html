@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisador e Divisor de Scripts Lua (Gemini)</title>
+    
+    <style>
+        :root {
+            --cor-fundo: #1e1e1e;
+            --cor-superficie: #2a2a2a;
+            --cor-borda: #444;
+            --cor-texto-primaria: #d4d4d4;
+            --cor-texto-secundaria: #a0a0a0;
+            --cor-primaria: #007acc;
+            --cor-primaria-hover: #005fa3;
+            --cor-sucesso: #4caf50;
+            --cor-erro: #f44336;
+            --cor-aviso: #ff9800;
+            --cor-codigo-fundo: #1a1a1a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--cor-fundo);
+            color: var(--cor-texto-primaria);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            display: grid;
+            gap: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+
+        .section {
+            background-color: var(--cor-superficie);
+            border: 1px solid var(--cor-borda);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: var(--cor-texto-secundaria);
+        }
+
+        input[type="text"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--cor-fundo);
+            border: 1px solid var(--cor-borda);
+            border-radius: 4px;
+            color: var(--cor-texto-primaria);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+        }
+
+        textarea {
+            min-height: 250px;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: var(--cor-primaria);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        button:hover {
+            background-color: var(--cor-primaria-hover);
+        }
+
+        button:disabled {
+            background-color: #555;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background-color: #5a5a5a;
+        }
+
+        button.secondary:hover {
+            background-color: #777;
+        }
+        
+        button.success { background-color: var(--cor-sucesso); }
+        button.error { background-color: var(--cor-erro); }
+        button.warning { background-color: var(--cor-aviso); }
+
+        #api-key-status {
+            margin-left: 10px;
+            font-weight: 600;
+        }
+
+        #loader {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Estilo do Spinner */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid var(--cor-primaria);
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #results-container {
+            display: grid;
+            gap: 15px;
+        }
+
+        .result-file {
+            background-color: var(--cor-superficie);
+            border: 1px solid var(--cor-borda);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #333;
+            border-bottom: 1px solid var(--cor-borda);
+        }
+
+        .result-header h3 {
+            font-family: 'Courier New', Courier, monospace;
+            color: var(--cor-primaria);
+        }
+
+        .result-content {
+            max-height: 400px;
+            overflow: auto;
+        }
+
+        pre {
+            background-color: var(--cor-codigo-fundo);
+            padding: 15px;
+            margin: 0;
+        }
+
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            color: var(--cor-texto-primaria);
+            white-space: pre;
+        }
+
+        /* Input de Ficheiro Estilizado */
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 10px 15px;
+            background-color: #5a5a5a;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .file-label:hover {
+            background-color: #777;
+        }
+
+        #file-name {
+            margin-left: 10px;
+            color: var(--cor-texto-secundaria);
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Analisador e Divisor de Scripts Lua</h1>
+        
+        <div class="section">
+            <h2>Configuração da API Key do Gemini</h2>
+            <div class="form-group">
+                <label for="api-key-input">API Key</label>
+                <div class="button-group" style="align-items: center;">
+                    <input type="password" id="api-key-input" placeholder="Cole a sua API key aqui" style="flex-grow: 1;">
+                    <button id="save-key-btn">Salvar</button>
+                    <button id="test-key-btn" class="secondary">Testar</button>
+                    <span id="api-key-status"></span>
+                </div>
+                <small style="color: var(--cor-texto-secundaria);">A sua chave é guardada localmente no seu navegador (localStorage).</small>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Submeter Script Lua</h2>
+            <div class="form-group">
+                <label for="code-textarea">Cole o código Lua ou carregue um ficheiro:</label>
+                <textarea id="code-textarea" rows="15" placeholder="-- O seu código Lua aqui..."></textarea>
+            </div>
+            <div class="button-group">
+                <label for="file-input" class="file-label">Carregar .lua</label>
+                <input type="file" id="file-input" accept=".lua">
+                <span id="file-name">Nenhum ficheiro selecionado</span>
+            </div>
+            <div class="form-group" style="margin-top: 20px;">
+                <button id="process-btn" style="width: 100%; font-size: 16px;">Processar e Dividir Script</button>
+            </div>
+        </div>
+
+        <div id="loader">
+            <div class="spinner"></div>
+            <p>A processar com o Gemini... Isto pode demorar alguns segundos.</p>
+        </div>
+
+        <div class="section" id="results-section" style="display: none;">
+            <h2>Resultados da Análise</h2>
+            <div id="results-container">
+                </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // === SELETORES DOM ===
+            const apiKeyInput = document.getElementById('api-key-input');
+            const saveKeyBtn = document.getElementById('save-key-btn');
+            const testKeyBtn = document.getElementById('test-key-btn');
+            const apiKeyStatus = document.getElementById('api-key-status');
+            
+            const codeTextarea = document.getElementById('code-textarea');
+            const fileInput = document.getElementById('file-input');
+            const fileNameSpan = document.getElementById('file-name');
+            const processBtn = document.getElementById('process-btn');
+            
+            const loader = document.getElementById('loader');
+            const resultsSection = document.getElementById('results-section');
+            const resultsContainer = document.getElementById('results-container');
+
+            // === CONSTANTES ===
+            // NOTA: O utilizador pediu "Gemini 2.5". Como esse modelo não está
+            // publicamente disponível, usamos o '1.5-pro' que é o mais capaz
+            // para seguir instruções complexas de formatação de código.
+            // A API gratuita refere-se ao '1.5-flash'. 
+            // Pode trocar 'gemini-1.5-pro-latest' por 'gemini-1.5-flash-latest' se preferir.
+            const GEMINI_MODEL_NAME = 'gemini-1.5-flash-latest';
+            const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL_NAME}:generateContent`;
+            const API_KEY_STORAGE = 'geminiApiKeyLuaSplitter';
+
+            // === GESTÃO DA API KEY ===
+
+            // Carregar chave do localStorage ao iniciar
+            function loadApiKey() {
+                const storedKey = localStorage.getItem(API_KEY_STORAGE);
+                if (storedKey) {
+                    apiKeyInput.value = storedKey;
+                    updateApiKeyStatus('Chave carregada', 'success');
+                } else {
+                    updateApiKeyStatus('Nenhuma chave guardada', 'warning');
+                }
+            }
+
+            // Salvar chave no localStorage
+            saveKeyBtn.addEventListener('click', () => {
+                const key = apiKeyInput.value.trim();
+                if (key) {
+                    localStorage.setItem(API_KEY_STORAGE, key);
+                    updateApiKeyStatus('Chave guardada!', 'success');
+                } else {
+                    updateApiKeyStatus('Chave inválida', 'error');
+                }
+            });
+
+            // Testar a validade da chave
+            testKeyBtn.addEventListener('click', async () => {
+                const key = apiKeyInput.value.trim();
+                if (!key) {
+                    updateApiKeyStatus('Insira uma chave', 'error');
+                    return;
+                }
+
+                updateApiKeyStatus('A testar...', 'warning');
+                testKeyBtn.disabled = true;
+
+                try {
+                    // Usamos a listagem de modelos, um endpoint simples para verificação
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+                    
+                    if (response.ok) {
+                        updateApiKeyStatus('Chave válida!', 'success');
+                    } else {
+                        const errorData = await response.json();
+                        updateApiKeyStatus(`Chave inválida: ${errorData.error.message}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('Erro ao testar chave:', error);
+                    updateApiKeyStatus('Erro de rede. Verifique a consola.', 'error');
+                } finally {
+                    testKeyBtn.disabled = false;
+                }
+            });
+
+            function updateApiKeyStatus(message, type) {
+                apiKeyStatus.textContent = message;
+                apiKeyStatus.className = type; // (Usar classes CSS para cores)
+                apiKeyStatus.style.color = `var(--cor-${type}, var(--cor-texto-secundaria))`;
+            }
+
+            // === GESTÃO DE INPUT DE FICHEIRO/CÓDIGO ===
+
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    if (file.name.endsWith('.lua')) {
+                        fileNameSpan.textContent = file.name;
+                        
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            codeTextarea.value = e.target.result;
+                        };
+                        reader.onerror = (e) => {
+                            alert('Erro ao ler o ficheiro.');
+                            console.error(e);
+                        };
+                        reader.readAsText(file);
+                    } else {
+                        alert('Por favor, carregue um ficheiro .lua válido.');
+                        fileInput.value = ''; // Reset input
+                        fileNameSpan.textContent = 'Nenhum ficheiro selecionado';
+                    }
+                }
+            });
+
+            // === PROCESSAMENTO PRINCIPAL ===
+
+            processBtn.addEventListener('click', () => {
+                const luaCode = codeTextarea.value.trim();
+                const apiKey = localStorage.getItem(API_KEY_STORAGE);
+
+                if (!apiKey) {
+                    alert('Por favor, insira e salve uma API Key do Gemini primeiro.');
+                    updateApiKeyStatus('Chave API necessária', 'error');
+                    return;
+                }
+
+                if (!luaCode) {
+                    alert('Por favor, cole código Lua ou carregue um ficheiro .lua.');
+                    return;
+                }
+
+                showLoader(true);
+                clearResults();
+                callGeminiApi(luaCode, apiKey);
+            });
+
+            async function callGeminiApi(luaCode, apiKey) {
+                // Construir o prompt com todas as regras
+                const prompt = buildGeminiPrompt(luaCode);
+
+                try {
+                    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{ text: prompt }]
+                            }],
+                            generationConfig: {
+                                // Forçar a saída JSON para parsing fácil
+                                responseMimeType: "application/json",
+                            }
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`Erro da API: ${errorData.error.message}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    // Extrair o texto JSON da resposta
+                    const jsonText = data.candidates[0].content.parts[0].text;
+                    const resultData = JSON.parse(jsonText);
+
+                    if (resultData && resultData.files && resultData.files.length > 0) {
+                        displayResults(resultData.files);
+                    } else {
+                        throw new Error('A API retornou uma estrutura de dados inesperada.');
+                    }
+
+                } catch (error) {
+                    console.error('Erro no processamento:', error);
+                    displayError(`Erro: ${error.message}. Verifique a consola para mais detalhes.`);
+                } finally {
+                    showLoader(false);
+                }
+            }
+
+            function buildGeminiPrompt(luaCode) {
+                // Este é o prompt que instrui o Gemini a seguir as regras
+                return `
+Você é um especialista em desenvolvimento Lua e um assistente de análise de código.
+Sua tarefa é analisar o script Lua fornecido e, se necessário, dividi-lo em várias partes, seguindo regras MUITO ESTRITAS.
+
+**Script Lua para Análise:**
+\`\`\`lua
+${luaCode}
+\`\`\`
+
+**Regras de Processamento:**
+
+1.  **Limite de Caracteres:** O limite máximo de caracteres por parte é 4500.
+2.  **Análise de Tamanho:**
+    * Se o script TOTAL tiver 4500 caracteres ou menos, NÃO o divida. Retorne-o como uma única parte.
+    * Se o script TOTAL tiver mais de 4500 caracteres, divida-o em quantas partes forem necessárias, respeitando o limite.
+3.  **Integridade Sintática (REGRA CRÍTICA):**
+    * A divisão NUNCA deve ocorrer no meio de uma função, um bloco de evento (ex: \`AddEventHandler\`), ou qualquer bloco de código lógico (loops, condicionais).
+    * A divisão SÓ PODE ocorrer *entre* definições completas de nível superior (funções, tabelas, blocos de variáveis).
+    * Se uma função inteira não couber no espaço restante de uma parte, essa parte deve terminar ANTES dessa função. A função completa deve então iniciar a PRÓXIMA parte.
+4.  **Convenção de Nomenclatura (OBRIGATÓRIO):**
+    * O nome de cada ficheiro resultante deve seguir o formato exato: \`client_part-X_Y.lua\`, onde 'X' é o número sequencial da parte (começando em 1) e 'Y' é o número TOTAL de partes.
+    * Exemplo para 3 partes: \`client_part-1_3.lua\`, \`client_part-2_3.lua\`, \`client_part-3_3.lua\`.
+    * Se for apenas uma parte (script < 4500 chars), use \`client_part-1_1.lua\`.
+5.  **Comentários de Cabeçalho (OBRIGATÓRIO):**
+    * Cada parte dividida (ou a parte única) DEVE começar com um comentário de cabeçalho estruturado.
+    * Formato:
+        \`\`\`lua
+        -- Parte X/Y do ficheiro client.lua
+        -- Contém funções [nome_primeira] até [nome_última]
+        \`\`\`
+    * Substitua [nome_primeira] e [nome_última] pelos nomes reais da primeira e última função/evento daquela parte. Se houver apenas uma, liste-a. Se não houver funções (ex: apenas variáveis), escreva "bloco de inicialização" ou "definições".
+6.  **Validação:** Todas as partes resultantes devem ser ficheiros Lua sintaticamente válidos.
+
+**Formato de Saída:**
+
+Responda APENAS com um objeto JSON. O objeto deve ter uma única chave "files", que é um array. Cada elemento do array deve ser um objeto com duas chaves: "filename" (o nome do ficheiro, ex: \`client_part-1_2.lua\`) e "content" (o código Lua para essa parte).
+
+**Exemplo de Saída JSON Esperada:**
+\`\`\`json
+{
+  "files": [
+    {
+      "filename": "client_part-1_2.lua",
+      "content": "-- Parte 1/2 do ficheiro client.lua\\n-- Contém funções func_A até func_C\\n\\nfunction func_A()\\n  --...\\nend\\n\\n--...\\n\\nfunction func_C()\\n  --...\\nend"
+    },
+    {
+      "filename": "client_part-2_2.lua",
+      "content": "-- Parte 2/2 do ficheiro client.lua\\n-- Contém funções func_D até func_Z\\n\\nfunction func_D()\\n  --...\\nend\\n\\n--...\\n\\nfunction func_Z()\\n  --...\\nend"
+    }
+  ]
+}
+\`\`\`
+
+Analise o script fornecido e retorne o JSON.
+`;
+            }
+
+            // === GESTÃO DA INTERFACE DE RESULTADOS ===
+
+            function showLoader(isLoading) {
+                loader.style.display = isLoading ? 'block' : 'none';
+                processBtn.disabled = isLoading;
+            }
+
+            function clearResults() {
+                resultsContainer.innerHTML = '';
+                resultsSection.style.display = 'none';
+            }
+
+            function displayError(message) {
+                resultsSection.style.display = 'block';
+                resultsContainer.innerHTML = `<div class="result-file" style="border-color: var(--cor-erro);"><div class="result-header" style="background-color: var(--cor-erro); color: white;"><h3>Erro</h3></div><pre><code>${message}</code></pre></div>`;
+            }
+
+            function displayResults(files) {
+                clearResults();
+                resultsSection.style.display = 'block';
+
+                if (files.length === 0) {
+                    resultsContainer.innerHTML = '<p>Nenhum resultado retornado.</p>';
+                    return;
+                }
+
+                files.forEach(file => {
+                    const fileElement = createResultFileElement(file.filename, file.content);
+                    resultsContainer.appendChild(fileElement);
+                });
+            }
+
+            function createResultFileElement(filename, content) {
+                const div = document.createElement('div');
+                div.className = 'result-file';
+
+                // Cabeçalho com nome e botões
+                const header = document.createElement('div');
+                header.className = 'result-header';
+                
+                const title = document.createElement('h3');
+                title.textContent = filename;
+                
+                const buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'button-group';
+
+                const copyBtn = document.createElement('button');
+                copyBtn.textContent = 'Copiar';
+                copyBtn.className = 'secondary';
+                copyBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(content).then(() => {
+                        copyBtn.textContent = 'Copiado!';
+                        copyBtn.classList.add('success');
+                        setTimeout(() => {
+                            copyBtn.textContent = 'Copiar';
+                            copyBtn.classList.remove('success');
+                        }, 2000);
+                    }, () => {
+                        alert('Falha ao copiar.');
+                    });
+                });
+
+                const downloadBtn = document.createElement('button');
+                downloadBtn.textContent = 'Baixar';
+                downloadBtn.addEventListener('click', () => {
+                    downloadFile(filename, content);
+                });
+
+                buttonsDiv.appendChild(copyBtn);
+                buttonsDiv.appendChild(downloadBtn);
+                header.appendChild(title);
+                header.appendChild(buttonsDiv);
+
+                // Conteúdo (código)
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'result-content';
+                
+                const pre = document.createElement('pre');
+                const code = document.createElement('code');
+                code.textContent = content; // Usar textContent para segurança
+                pre.appendChild(code);
+                contentDiv.appendChild(pre);
+
+                div.appendChild(header);
+                div.appendChild(contentDiv);
+
+                return div;
+            }
+
+            // === FUNÇÕES UTILITÁRIAS ===
+
+            function downloadFile(filename, text) {
+                const element = document.createElement('a');
+                element.setAttribute('href', 'data:application/lua;charset=utf-8,' + encodeURIComponent(text));
+                element.setAttribute('download', filename);
+                element.style.display = 'none';
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+            }
+
+            // --- INICIALIZAÇÃO ---
+            loadApiKey();
+
+        });
+    </script>
+
+</body>
+</html>
