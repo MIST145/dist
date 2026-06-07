@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Menu Manager v2.0</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fontsource-inter@4.5.0/index.min.css">
+    <style>
+        :root {
+            --bg-primary: #0a0f1a;
+            --bg-secondary: #060b12;
+            --bg-sidebar: #0d1220;
+            --bg-card: rgba(15, 23, 42, 0.85);
+            --bg-hover: rgba(0, 255, 209, 0.08);
+            --bg-active: rgba(0, 255, 209, 0.15);
+            --border-color: rgba(0, 255, 209, 0.15);
+            --text-primary: #e8f6f3;
+            --text-secondary: #8b9a9e;
+            --accent: #00ffd1;
+            --accent-glow: rgba(0, 255, 209, 0.3);
+            --purple: #7b2cbf;
+            --cyan: #00b4d8;
+            --green: #2ecc71;
+            --danger: #ff6b6b;
+            --sidebar-width: 280px;
+            --sidebar-collapsed-width: 64px;
+            --transition-speed: 0.3s;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(circle at 10% 20%, rgba(0, 180, 216, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(123, 44, 191, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(0, 255, 209, 0.03) 0%, transparent 70%);
+            pointer-events: none; z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2300ffd1' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.4; pointer-events: none; z-index: 0;
+        }
+
+        .app-container {
+            display: flex; min-height: 100vh; position: relative; z-index: 1;
+        }
+
+        /* ======================== SIDEBAR ======================== */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            box-shadow: 5px 0 30px rgba(0, 255, 209, 0.05);
+            transition: width var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .sidebar.collapsed {
+            width: var(--sidebar-collapsed-width);
+        }
+
+        .sidebar::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--purple), var(--cyan));
+            animation: dnaFlow 4s linear infinite; background-size: 200% 100%;
+        }
+
+        @keyframes dnaFlow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: space-between;
+            height: 56px;
+        }
+
+        .logo-area {
+            display: flex; align-items: center; gap: 0.75rem;
+            overflow: hidden; white-space: nowrap;
+            transition: opacity var(--transition-speed);
+        }
+
+        .sidebar.collapsed .logo-area { opacity: 0; width: 0; }
+
+        .logo-icon {
+            width: 36px; height: 36px; min-width: 36px;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .logo-text {
+            display: flex; flex-direction: column;
+        }
+
+        .logo-title {
+            font-size: 0.9rem; font-weight: 700; color: var(--accent);
+            text-shadow: 0 0 20px var(--accent-glow);
+            line-height: 1.2;
+        }
+
+        .logo-subtitle {
+            font-size: 0.65rem; color: var(--text-secondary);
+        }
+
+        .sidebar-toggle {
+            background: none; border: 1px solid var(--border-color);
+            color: var(--accent); cursor: pointer;
+            width: 32px; height: 32px; min-width: 32px;
+            border-radius: 6px; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s; font-size: 0.85rem;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--bg-hover);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .sidebar-toggle i {
+            transition: transform var(--transition-speed);
+        }
+
+        .sidebar.collapsed .sidebar-toggle i {
+            transform: rotate(180deg);
+        }
+
+        .menu-container {
+            flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0.5rem 0;
+        }
+
+        .menu-section-title {
+            padding: 0.75rem 1rem 0.5rem;
+            font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.5px; color: var(--text-secondary);
+            white-space: nowrap; overflow: hidden;
+            transition: opacity var(--transition-speed);
+        }
+
+        .sidebar.collapsed .menu-section-title { opacity: 0; height: 0; padding: 0; }
+
+        .menu-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.6rem 1rem;
+            cursor: pointer; text-decoration: none; color: var(--text-secondary);
+            transition: all 0.2s; position: relative;
+            white-space: nowrap; overflow: hidden;
+            border-left: 3px solid transparent;
+        }
+
+        .menu-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-left-color: var(--accent);
+        }
+
+        .menu-item.active {
+            background: var(--bg-active);
+            color: var(--accent);
+            border-left-color: var(--accent);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .menu-item-icon {
+            width: 20px; min-width: 20px; text-align: center; font-size: 1rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .menu-item-label {
+            font-size: 0.85rem; font-weight: 500;
+            transition: opacity var(--transition-speed), visibility var(--transition-speed);
+        }
+
+        .sidebar.collapsed .menu-item-label {
+            opacity: 0; width: 0; visibility: hidden;
+        }
+
+        .menu-item-badge {
+            margin-left: auto;
+            background: var(--purple);
+            color: white;
+            font-size: 0.65rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 10px;
+            transition: opacity var(--transition-speed);
+        }
+
+        .sidebar.collapsed .menu-item-badge { opacity: 0; width: 0; padding: 0; }
+
+        /* Category expand/collapse */
+        .category-group { overflow: hidden; }
+
+        .category-header {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.6rem 1rem;
+            cursor: pointer; color: var(--text-secondary);
+            transition: all 0.2s; position: relative;
+            white-space: nowrap; overflow: hidden;
+            border-left: 3px solid transparent;
+        }
+
+        .category-header:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+            border-left-color: var(--accent);
+        }
+
+        .category-header.expanded {
+            background: var(--bg-active);
+            color: var(--accent);
+            border-left-color: var(--accent);
+        }
+
+        .category-chevron {
+            margin-left: auto;
+            transition: transform 0.2s;
+            font-size: 0.7rem;
+            min-width: 12px; text-align: center;
+        }
+
+        .category-header.expanded .category-chevron {
+            transform: rotate(90deg);
+        }
+
+        .sidebar.collapsed .category-chevron { opacity: 0; }
+
+        .subcategory-list {
+            max-height: 0; overflow: hidden;
+            transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .subcategory-list.open {
+            max-height: 500px;
+        }
+
+        .subcategory-item {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+            cursor: pointer; color: var(--text-secondary);
+            transition: all 0.2s; position: relative;
+            white-space: nowrap; overflow: hidden;
+        }
+
+        .subcategory-item:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .subcategory-item.active {
+            background: var(--bg-active);
+            color: var(--accent);
+        }
+
+        .subcategory-item::before {
+            content: '';
+            position: absolute; left: 1.5rem; top: 0; bottom: 0;
+            width: 2px; background: rgba(0, 255, 209, 0.1);
+        }
+
+        .sub-dot {
+            width: 6px; height: 6px; min-width: 6px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+        }
+
+        .subcategory-item.active .sub-dot {
+            background: var(--accent);
+            box-shadow: 0 0 6px var(--accent-glow);
+        }
+
+        .sidebar.collapsed .subcategory-item {
+            display: none;
+        }
+
+        .sidebar-footer {
+            border-top: 1px solid var(--border-color);
+            padding: 0.75rem 0.5rem;
+        }
+
+        .footer-btn {
+            display: flex; align-items: center; gap: 0.75rem;
+            padding: 0.6rem 0.75rem; width: 100%;
+            background: none; border: 1px solid var(--border-color);
+            color: var(--accent); cursor: pointer; border-radius: 8px;
+            font-size: 0.85rem; font-weight: 500;
+            transition: all 0.2s; white-space: nowrap; overflow: hidden;
+        }
+
+        .footer-btn:hover {
+            background: var(--bg-hover);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .footer-btn-icon {
+            width: 20px; min-width: 20px; text-align: center;
+        }
+
+        .footer-btn-text {
+            transition: opacity var(--transition-speed), visibility var(--transition-speed);
+        }
+
+        .sidebar.collapsed .footer-btn-text { opacity: 0; width: 0; visibility: hidden; }
+
+        /* Tooltip for collapsed sidebar */
+        .sidebar.collapsed .menu-item:hover::after,
+        .sidebar.collapsed .category-header:hover::after {
+            content: attr(data-tooltip);
+            position: absolute; left: calc(100% + 8px); top: 50%;
+            transform: translateY(-50%);
+            background: var(--bg-sidebar); color: var(--text-primary);
+            padding: 0.4rem 0.75rem; border-radius: 6px;
+            font-size: 0.8rem; white-space: nowrap;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 100;
+        }
+
+        /* ======================== MAIN CONTENT ======================== */
+        .main-content {
+            flex: 1; display: flex; flex-direction: column;
+            overflow: hidden; position: relative;
+            background: var(--bg-secondary);
+        }
+
+        .main-header {
+            height: 56px; padding: 0 1.5rem;
+            display: flex; align-items: center; justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+        }
+
+        .main-header-title {
+            font-size: 1rem; font-weight: 600; color: var(--text-primary);
+        }
+
+        .header-actions { display: flex; gap: 0.75rem; align-items: center; }
+
+        .header-btn {
+            padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border-color);
+            background: none; color: var(--text-secondary); cursor: pointer;
+            font-size: 0.8rem; font-weight: 500;
+            display: flex; align-items: center; gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .header-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--bg-hover);
+        }
+
+        .header-btn.primary {
+            background: linear-gradient(135deg, var(--accent), var(--cyan));
+            color: var(--bg-primary); border-color: transparent;
+        }
+
+        .header-btn.primary:hover {
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .content-area {
+            flex: 1; overflow-y: auto; padding: 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem;
+            background: linear-gradient(135deg, var(--accent), var(--cyan), var(--purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem; margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card); backdrop-filter: blur(15px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 1.25rem;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+            box-shadow: 0 8px 25px rgba(0, 255, 209, 0.08);
+        }
+
+        .stat-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .stat-icon {
+            width: 40px; height: 40px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .stat-icon.teal { background: rgba(0, 255, 209, 0.1); color: var(--accent); }
+        .stat-icon.purple { background: rgba(123, 44, 191, 0.1); color: var(--purple); }
+        .stat-icon.cyan { background: rgba(0, 180, 216, 0.1); color: var(--cyan); }
+        .stat-icon.green { background: rgba(46, 204, 113, 0.1); color: var(--green); }
+
+        .stat-value {
+            font-size: 1.75rem; font-weight: 700; color: var(--text-primary);
+        }
+
+        .stat-label {
+            font-size: 0.8rem; color: var(--text-secondary);
+        }
+
+        /* Cards */
+        .content-card {
+            background: var(--bg-card); backdrop-filter: blur(15px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1rem; font-weight: 600; margin-bottom: 1rem;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+
+        .card-title i { color: var(--accent); }
+
+        /* Category management card */
+        .category-management-card {
+            background: var(--bg-card); backdrop-filter: blur(15px);
+            border: 2px solid var(--accent);
+            border-radius: 12px; padding: 1.5rem;
+            margin-bottom: 1.5rem; position: relative; overflow: hidden;
+        }
+
+        .category-management-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--purple), var(--cyan));
+        }
+
+        .cat-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.75rem 1rem; border-radius: 8px;
+            transition: background 0.2s; cursor: pointer;
+        }
+
+        .cat-item:hover { background: var(--bg-hover); }
+
+        .cat-item-left {
+            display: flex; align-items: center; gap: 0.75rem;
+        }
+
+        .cat-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+        }
+
+        .cat-item-badge {
+            background: rgba(0, 180, 216, 0.15);
+            color: var(--cyan);
+            font-size: 0.75rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+        }
+
+        /* Subcategory tree */
+        .tree-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .tree-item:last-child { border-bottom: none; }
+
+        .tree-item-label {
+            font-size: 0.85rem; color: var(--text-secondary);
+        }
+
+        .tree-item-label strong { color: var(--text-primary); }
+
+        .tree-badge {
+            font-size: 0.7rem; color: var(--green);
+            background: rgba(46, 204, 113, 0.1);
+            padding: 0.15rem 0.5rem; border-radius: 4px;
+        }
+
+        /* Content linking */
+        .link-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.5rem 0;
+        }
+
+        .link-item-left {
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+
+        .link-check { color: var(--green); font-size: 0.9rem; }
+
+        .link-url {
+            font-size: 0.8rem; color: var(--cyan); font-family: monospace;
+        }
+
+        /* Sync card */
+        .sync-status {
+            display: flex; align-items: center; gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .sync-indicator {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 8px rgba(46, 204, 113, 0.5);
+            animation: syncPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes syncPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .sync-btn {
+            padding: 0.5rem 1rem; border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: none; color: var(--text-secondary);
+            cursor: pointer; font-size: 0.8rem;
+            display: flex; align-items: center; gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .sync-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--bg-hover);
+        }
+
+        /* Iframe container */
+        .iframe-container {
+            flex: 1; position: relative; overflow: hidden;
+            background: #fff;
+        }
+
+        .content-frame {
+            width: 100%; height: 100%; border: none;
+            opacity: 0; transition: opacity 0.3s;
+        }
+
+        .content-frame.loaded { opacity: 1; }
+
+        .welcome-screen {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 2rem;
+            transition: opacity 0.3s, visibility 0.3s;
+            background: var(--bg-secondary);
+        }
+
+        .welcome-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+        .welcome-icon {
+            font-size: 3.5rem; margin-bottom: 1.5rem;
+            filter: drop-shadow(0 0 15px var(--accent-glow-strong));
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(0.95); }
+        }
+
+        .welcome-title {
+            font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-desc {
+            color: var(--text-secondary); max-width: 350px; line-height: 1.6; font-size: 0.9rem;
+        }
+
+        .loader {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            display: none; flex-direction: column; align-items: center; gap: 1rem;
+        }
+
+        .loader.active { display: flex; }
+
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid var(--accent);
+            border-top-color: transparent; border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Settings Panel */
+        .overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+            z-index: 999; opacity: 0; visibility: hidden; transition: all 0.3s;
+        }
+
+        .overlay.show { opacity: 1; visibility: visible; }
+
+        .settings-panel {
+            position: fixed; top: 0; right: -450px; width: 420px; height: 100vh;
+            background: var(--bg-sidebar); backdrop-filter: blur(25px);
+            border-left: 1px solid var(--border-color);
+            padding: 1.5rem; transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000; overflow-y: auto; display: flex; flex-direction: column;
+            box-shadow: -10px 0 40px rgba(0, 0, 0, 0.6);
+        }
+
+        .settings-panel.open { right: 0; }
+
+        .panel-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-color);
+        }
+
+        .panel-title {
+            font-size: 1.1rem; font-weight: 600; color: var(--accent);
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+
+        .close-btn {
+            background: none; border: none; color: var(--text-secondary);
+            font-size: 1.5rem; cursor: pointer; padding: 0.25rem;
+            border-radius: 50%; transition: all 0.2s;
+            width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+        }
+
+        .close-btn:hover { background: rgba(255,255,255,0.1); color: var(--accent); }
+
+        .section-title {
+            font-size: 0.8rem; font-weight: 600; color: var(--cyan); margin-bottom: 0.75rem;
+            display: flex; align-items: center; gap: 0.5rem;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+
+        .editor-card {
+            background: rgba(0, 0, 0, 0.3); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 1rem; margin-bottom: 0.75rem;
+            transition: border-color 0.3s;
+        }
+
+        .editor-card:hover { border-color: var(--accent); }
+
+        .sub-list {
+            padding-left: 1rem; border-left: 2px solid rgba(0, 255, 209, 0.1); margin-top: 0.5rem;
+        }
+
+        .sub-item {
+            display: grid; grid-template-columns: auto 1fr 1fr auto; gap: 0.5rem;
+            align-items: center; margin-bottom: 0.5rem; padding: 0.5rem;
+            background: rgba(255,255,255,0.02); border-radius: 8px;
+        }
+
+        .sub-item:last-child { margin-bottom: 0; }
+
+        .input-field {
+            background: rgba(10, 20, 35, 0.6); border: 1px solid var(--border-color);
+            color: var(--text-primary); padding: 0.5rem 0.75rem; border-radius: 8px;
+            font-size: 0.85rem; width: 100%; transition: all 0.3s; font-family: inherit;
+        }
+
+        .input-field:focus {
+            outline: none; border-color: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        select.input-field {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2300ffd1' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 0.75rem center;
+            padding-right: 2rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem; border-radius: 8px; cursor: pointer;
+            font-size: 0.85rem; font-weight: 500; border: none;
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.4rem; justify-content: center;
+        }
+
+        .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.75rem; height: 28px; width: 28px; padding: 0; }
+        .btn-primary { background: var(--accent); color: var(--bg-primary); }
+        .btn-primary:hover { background: var(--cyan); box-shadow: 0 0 10px var(--accent-glow); }
+        .btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--accent); }
+        .btn-outline:hover { background: var(--bg-hover); }
+        .btn-danger { background: rgba(255, 107, 107, 0.1); color: var(--danger); border: 1px solid rgba(255, 107, 107, 0.2); }
+        .btn-danger:hover { background: rgba(255, 107, 107, 0.2); }
+        .btn-block { width: 100%; margin-top: 0.5rem; padding: 0.75rem; }
+
+        .io-section {
+            margin-top: auto; padding-top: 1.5rem; border-top: 1px solid var(--border-color);
+            display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;
+        }
+
+        /* Mobile Toggle */
+        .mobile-toggle {
+            display: none; position: fixed; top: 1rem; left: 1rem; z-index: 100;
+            background: var(--bg-sidebar); border: 1px solid var(--border-color);
+            color: var(--accent); padding: 0.6rem; border-radius: 8px; cursor: pointer;
+            font-size: 1.25rem; backdrop-filter: blur(10px);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed; left: 0; top: 0; z-index: 90;
+                transform: translateX(-100%); height: 100%;
+                width: var(--sidebar-width);
+            }
+            .sidebar.mobile-open { transform: translateX(0); }
+            .mobile-toggle { display: block; }
+            .settings-panel { width: 100%; right: -100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <button class="mobile-toggle" id="mobileToggle">☰</button>
+        
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-area">
+                    <div class="logo-icon"></div>
+                    <div class="logo-text">
+                        <div class="logo-title">Admin Menu</div>
+                        <div class="logo-subtitle">Manager v2.0</div>
+                    </div>
+                </div>
+                <button class="sidebar-toggle" id="sidebarToggle" title="Minimizar/Restaurar sidebar">
+                    <i class="fa-solid fa-angles-left"></i>
+                </button>
+            </div>
+            
+            <nav class="menu-container" id="menuContainer">
+                <div class="menu-section-title">Principal</div>
+                <div class="menu-item active" data-page="dashboard" data-tooltip="Dashboard">
+                    <span class="menu-item-icon"><i class="fa-solid fa-gauge"></i></span>
+                    <span class="menu-item-label">Dashboard</span>
+                </div>
+                <div class="menu-item" data-page="calendar" data-tooltip="Calendar">
+                    <span class="menu-item-icon"><i class="fa-solid fa-calendar"></i></span>
+                    <span class="menu-item-label">Calendar</span>
+                </div>
+                <div id="categoriesNav" class="category-group">
+                    <div class="category-header expanded" id="categoriesHeader" data-tooltip="Categories">
+                        <span class="menu-item-icon"><i class="fa-solid fa-tags"></i></span>
+                        <span class="menu-item-label">Categories</span>
+                        <span class="menu-item-badge" id="catCount">0</span>
+                        <span class="category-chevron"><i class="fa-solid fa-chevron-right"></i></span>
+                    </div>
+                    <div class="subcategory-list open" id="subcategoryList">
+                        <!-- Dynamic subcategories -->
+                    </div>
+                </div>
+                <div class="menu-item" data-page="analytics" data-tooltip="Analytics">
+                    <span class="menu-item-icon"><i class="fa-solid fa-chart-line"></i></span>
+                    <span class="menu-item-label">Analytics</span>
+                </div>
+                <div class="menu-item" data-page="contents" data-tooltip="Contents">
+                    <span class="menu-item-icon"><i class="fa-solid fa-star"></i></span>
+                    <span class="menu-item-label">Contents</span>
+                </div>
+                <div class="menu-item" data-page="sync" data-tooltip="Sync">
+                    <span class="menu-item-icon"><i class="fa-solid fa-sync"></i></span>
+                    <span class="menu-item-label">Sync</span>
+                </div>
+
+                <div class="menu-section-title">Gestão</div>
+                <div class="menu-item" data-page="editor" data-tooltip="Editor de Menus">
+                    <span class="menu-item-icon"><i class="fa-solid fa-pen-to-square"></i></span>
+                    <span class="menu-item-label">Editor de Menus</span>
+                </div>
+                <div class="menu-item" data-page="import" data-tooltip="Import / Export">
+                    <span class="menu-item-icon"><i class="fa-solid fa-file-import"></i></span>
+                    <span class="menu-item-label">Import / Export</span>
+                </div>
+                <div class="menu-item" data-page="profile" data-tooltip="Profile">
+                    <span class="menu-item-icon"><i class="fa-solid fa-user"></i></span>
+                    <span class="menu-item-label">Profile</span>
+                </div>
+                <div class="menu-item" data-page="logout" data-tooltip="Logout">
+                    <span class="menu-item-icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+                    <span class="menu-item-label">Logout</span>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="footer-btn" id="settingsBtn">
+                    <span class="footer-btn-icon"><i class="fa-solid fa-gear"></i></span>
+                    <span class="footer-btn-text">Settings</span>
+                </button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="main-header">
+                <div class="main-header-title" id="headerTitle">Dashboard</div>
+                <div class="header-actions">
+                    <button class="header-btn" id="exportBtnHeader">
+                        <i class="fa-solid fa-file-export"></i> Export
+                    </button>
+                    <button class="header-btn primary" id="newCatBtn">
+                        <i class="fa-solid fa-plus"></i> Nova Categoria
+                    </button>
+                </div>
+            </div>
+
+            <div class="iframe-container" id="iframeContainer">
+                <div class="loader" id="loader">
+                    <div class="spinner"></div>
+                    <div style="color: var(--accent); font-size: 0.9rem;">A carregar...</div>
+                </div>
+
+                <div class="welcome-screen" id="welcomeScreen">
+                    <div class="welcome-icon">🧬</div>
+                    <h1 class="welcome-title">Admin Menu Manager</h1>
+                    <p class="welcome-desc">
+                        Selecione uma opção na barra lateral para navegar.
+                        Use o botão "Settings" para gerir categorias e subcategorias.
+                    </p>
+                </div>
+
+                <iframe class="content-frame" id="contentFrame" sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+            </div>
+        </main>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="overlay" id="overlay"></div>
+    <div class="settings-panel" id="settingsPanel">
+        <div class="panel-header">
+            <h2 class="panel-title"><i class="fa-solid fa-gear"></i> Editor de Menus</h2>
+            <button class="close-btn" id="closeSettings">×</button>
+        </div>
+
+        <div style="flex: 1; overflow-y: auto; padding-right: 5px;">
+            <div class="section-title">📂 Categorias</div>
+            <div id="categoriesEditor">
+                <!-- Dynamic Editor Content -->
+            </div>
+            <button class="btn btn-primary btn-block" id="addCategoryBtn">
+                <i class="fa-solid fa-plus"></i> Nova Categoria
+            </button>
+        </div>
+
+        <div class="io-section">
+            <button class="btn btn-outline" id="exportBtn">
+                <i class="fa-solid fa-file-export"></i> Export
+            </button>
+            <button class="btn btn-outline" id="importBtn">
+                <i class="fa-solid fa-file-import"></i> Import
+            </button>
+            <input type="file" id="importInput" accept=".json" style="display: none;">
+        </div>
+    </div>
+
+    <script>
+        const ICON_OPTIONS = [
+            { value: 'fa-gauge', label: 'Dashboard', emoji: '📊' },
+            { value: 'fa-link', label: 'Link', emoji: '🔗' },
+            { value: 'fa-chart-pie', label: 'Chart', emoji: '📈' },
+            { value: 'fa-calendar', label: 'Calendar', emoji: '📅' },
+            { value: 'fa-circle-info', label: 'Info', emoji: '️' },
+            { value: 'fa-sliders', label: 'Sliders', emoji: '️' },
+            { value: 'fa-envelope', label: 'Envelope', emoji: '✉️' },
+            { value: 'fa-home', label: 'Home', emoji: '🏠' },
+            { value: 'fa-user', label: 'User', emoji: '👤' },
+            { value: 'fa-cog', label: 'Settings', emoji: '🔧' },
+            { value: 'fa-bell', label: 'Bell', emoji: '🔔' },
+            { value: 'fa-star', label: 'Star', emoji: '⭐' },
+            { value: 'fa-heart', label: 'Heart', emoji: '❤️' },
+            { value: 'fa-image', label: 'Image', emoji: '🖼️' },
+            { value: 'fa-music', label: 'Music', emoji: '🎵' },
+            { value: 'fa-code', label: 'Code', emoji: '💻' },
+            { value: 'fa-globe', label: 'Globe', emoji: '🌐' },
+            { value: 'fa-folder', label: 'Folder', emoji: '📁' },
+            { value: 'fa-database', label: 'Database', emoji: '💾' },
+            { value: 'fa-server', label: 'Server', emoji: '🖥️' },
+            { value: 'fa-tags', label: 'Categories', emoji: '️' },
+            { value: 'fa-rocket', label: 'Try', emoji: '🚀' },
+            { value: 'fa-cube', label: 'Base44', emoji: '🧊' },
+            { value: 'fa-layer-group', label: 'Framework', emoji: '🔷' },
+            { value: 'fa-hammer', label: 'Menu build', emoji: '🔨' },
+            { value: 'fa-wand-magic-sparkles', label: 'Links transformation', emoji: '✨' },
+            { value: 'fa-brain', label: 'Neural', emoji: '🧠' },
+        ];
+
+        let appState = {
+            categories: [
+                {
+                    id: 'cat_1', name: 'Adm', icon: 'fa-tags', color: '#3b82f6', desc: '', link: '#/categories/adm',
+                    children: [
+                        { id: 'sub_1', name: 'Try', link: 'https://framework-ai.lovable.app/', icon: 'fa-rocket' },
+                        { id: 'sub_2', name: 'Base44', link: 'https://repo-github.base44.app/', icon: 'fa-cube' }
+                    ]
+                },
+                {
+                    id: 'cat_2', name: 'Lovable', icon: 'fa-heart', color: '#ff0000', desc: 'Applications links', link: '#/categories/lovable',
+                    children: [
+                        { id: 'sub_3', name: 'Framework', link: 'https://framework-ai.lovable.app/', icon: 'fa-layer-group' },
+                        { id: 'sub_4', name: 'Menu build', link: 'https://build-a-menu.lovable.app/', icon: 'fa-hammer' },
+                        { id: 'sub_5', name: 'Links transformation', link: 'https://transform-pixie.lovable.app/', icon: 'fa-wand-magic-sparkles' },
+                        { id: 'sub_6', name: 'Neural', link: 'https://repo-github.base44.app/', icon: 'fa-brain' }
+                    ]
+                }
+            ]
+        };
+
+        const els = {
+            sidebar: document.getElementById('sidebar'),
+            menuContainer: document.getElementById('menuContainer'),
+            categoriesHeader: document.getElementById('categoriesHeader'),
+            subcategoryList: document.getElementById('subcategoryList'),
+            catCount: document.getElementById('catCount'),
+            sidebarToggle: document.getElementById('sidebarToggle'),
+            settingsBtn: document.getElementById('settingsBtn'),
+            settingsPanel: document.getElementById('settingsPanel'),
+            overlay: document.getElementById('overlay'),
+            closeSettings: document.getElementById('closeSettings'),
+            categoriesEditor: document.getElementById('categoriesEditor'),
+            addCategoryBtn: document.getElementById('addCategoryBtn'),
+            exportBtn: document.getElementById('exportBtn'),
+            exportBtnHeader: document.getElementById('exportBtnHeader'),
+            importBtn: document.getElementById('importBtn'),
+            importInput: document.getElementById('importInput'),
+            contentFrame: document.getElementById('contentFrame'),
+            welcomeScreen: document.getElementById('welcomeScreen'),
+            loader: document.getElementById('loader'),
+            mobileToggle: document.getElementById('mobileToggle'),
+            headerTitle: document.getElementById('headerTitle'),
+            newCatBtn: document.getElementById('newCatBtn')
+        };
+
+        let expandedCategories = {};
+
+        function renderMenu() {
+            // Render subcategories
+            els.subcategoryList.innerHTML = '';
+            let totalSubs = 0;
+            appState.categories.forEach(cat => {
+                totalSubs += cat.children.length;
+                cat.children.forEach(sub => {
+                    const item = document.createElement('div');
+                    item.className = 'subcategory-item';
+                    item.dataset.url = sub.link;
+                    item.innerHTML = `<span class="sub-dot"></span><span class="menu-item-label">${sub.name}</span>`;
+                    item.onclick = () => {
+                        document.querySelectorAll('.menu-item, .subcategory-item').forEach(el => el.classList.remove('active'));
+                        item.classList.add('active');
+                        loadUrl(sub.link);
+                        if (window.innerWidth <= 768) els.sidebar.classList.remove('mobile-open');
+                    };
+                    els.subcategoryList.appendChild(item);
+                });
+            });
+            els.catCount.textContent = appState.categories.length;
+        }
+
+        function loadUrl(url) {
+            if (!url || url === '#') {
+                els.welcomeScreen.classList.remove('hidden');
+                els.contentFrame.classList.remove('loaded');
+                return;
+            }
+            els.welcomeScreen.classList.add('hidden');
+            els.loader.classList.add('active');
+            els.contentFrame.classList.remove('loaded');
+            els.contentFrame.src = url;
+        }
+
+        els.contentFrame.onload = () => {
+            els.loader.classList.remove('active');
+            els.contentFrame.classList.add('loaded');
+        };
+
+        // Sidebar minimize/restore
+        els.sidebarToggle.onclick = () => {
+            els.sidebar.classList.toggle('collapsed');
+        };
+
+        // Categories header expand/collapse
+        els.categoriesHeader.onclick = () => {
+            els.categoriesHeader.classList.toggle('expanded');
+            els.subcategoryList.classList.toggle('open');
+            els.subcategoryList.classList.toggle('collapsed');
+        };
+
+        // Page navigation
+        document.querySelectorAll('.menu-item[data-page]').forEach(item => {
+            item.onclick = () => {
+                document.querySelectorAll('.menu-item, .subcategory-item').forEach(el => el.classList.remove('active'));
+                item.classList.add('active');
+                const page = item.dataset.page;
+                els.headerTitle.textContent = item.querySelector('.menu-item-label').textContent;
+                navigateToPage(page);
+                if (window.innerWidth <= 768) els.sidebar.classList.remove('mobile-open');
+            };
+        });
+
+        function navigateToPage(page) {
+            els.welcomeScreen.classList.add('hidden');
+            els.loader.classList.remove('active');
+            els.contentFrame.classList.remove('loaded');
+            
+            const pageContent = {
+                dashboard: renderDashboard(),
+                calendar: '<div style="padding:3rem;text-align:center;color:#8b9a9e;font-family:sans-serif;"><i class="fa-solid fa-calendar" style="font-size:3rem;margin-bottom:1rem;"></i><h2>Calendário em breve</h2></div>',
+                analytics: '<div style="padding:3rem;text-align:center;color:#8b9a9e;font-family:sans-serif;"><i class="fa-solid fa-chart-line" style="font-size:3rem;margin-bottom:1rem;"></i><h2>Analytics em breve</h2></div>',
+                contents: '<div style="padding:3rem;text-align:center;color:#8b9a9e;font-family:sans-serif;"><i class="fa-solid fa-star" style="font-size:3rem;margin-bottom:1rem;"></i><h2>Conteúdos em breve</h2></div>',
+                sync: '<div style="padding:3rem;text-align:center;color:#8b9a9e;font-family:sans-serif;"><i class="fa-solid fa-sync" style="font-size:3rem;margin-bottom:1rem;"></i><h2>Sync em breve</h2></div>',
+                editor: '<div style="padding:3rem;text-align:center;color:#8b9a9e;font-family:sans-serif;"><i class="fa-solid fa-pen-to-square" style="font-size:3rem;margin-bottom:1rem;"></i><h2>Use o painel Settings para editar</h2></div>',
+                import: '<div style="padding:3rem;text-align:center;color:#8b9a9e;font-family:sans-serif;"><i class="fa-solid fa-file-import" style="font-size:3rem;margin-bottom:1rem;"></i><h2>Use o botão Export/Import no Settings</h2></div>',
+                profile: '<div style="padding:3rem;text-align:center;color:#8b9a9e;font-family:sans-serif;"><i class="fa-solid fa-user" style="font-size:3rem;margin-bottom:1rem;"></i><h2>Perfil em breve</h2></div>',
+                logout: '<div style="padding:3rem;text-align:center;color:#8b9a9e;font-family:sans-serif;"><i class="fa-solid fa-right-from-bracket" style="font-size:3rem;margin-bottom:1rem;"></i><h2>Logout</h2></div>'
+            };
+            
+            const html = pageContent[page] || pageContent.dashboard;
+            els.contentFrame.srcdoc = `<!DOCTYPE html><html><head><style>body{margin:0;background:#0a0f1a;color:#e8f6f3;font-family:Inter,system-ui,sans-serif;}</style></head><body>${html}</body></html>`;
+            els.contentFrame.classList.add('loaded');
+        }
+
+        function renderDashboard() {
+            let totalSubs = 0;
+            appState.categories.forEach(c => totalSubs += c.children.length);
+            
+            let catItems = appState.categories.map(c => {
+                return `<div class="cat-item">
+                    <div class="cat-item-left">
+                        <span class="cat-dot" style="background:${c.color || '#3b82f6'}"></span>
+                        <span style="font-size:0.9rem;font-weight:500;">${c.name}</span>
+                    </div>
+                    <span class="cat-item-badge">${c.children.length}</span>
+                </div>`;
+            }).join('');
+
+            let treeItems = '';
+            appState.categories.forEach(c => {
+                c.children.forEach(s => {
+                    treeItems += `<div class="tree-item">
+                        <span class="tree-item-label"><strong>${c.name}</strong> › ${s.name}</span>
+                        <span class="tree-badge">URL</span>
+                    </div>`;
+                });
+            });
+
+            let linkItems = appState.categories.map(c => {
+                return `<div class="link-item">
+                    <div class="link-item-left">
+                        <i class="fa-solid fa-circle-check link-check"></i>
+                        <span style="font-size:0.85rem;">${c.name}</span>
+                    </div>
+                    <span class="link-url">${c.link || '#/categories/' + c.name.toLowerCase()}</span>
+                </div>`;
+            }).join('');
+
+            return `<!DOCTYPE html>
+            <html><head>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fontsource-inter@4.5.0/index.min.css">
+            <style>
+                :root {
+                    --bg: #0a0f1a; --card: rgba(15, 23, 42, 0.85); --border: rgba(0, 255, 209, 0.15);
+                    --text: #e8f6f3; --text2: #8b9a9e; --accent: #00ffd1; --purple: #7b2cbf;
+                    --cyan: #00b4d8; --green: #2ecc71;
+                }
+                body { margin: 0; padding: 1.5rem; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+                h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.25rem; background: linear-gradient(135deg, var(--accent), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+                .subtitle { color: var(--text2); font-size: 0.9rem; margin-bottom: 2rem; }
+                .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+                .stat { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+                .stat-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+                .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+                .icon-teal { background: rgba(0,255,209,0.1); color: var(--accent); }
+                .icon-purple { background: rgba(123,44,191,0.1); color: var(--purple); }
+                .icon-cyan { background: rgba(0,180,216,0.1); color: var(--cyan); }
+                .icon-green { background: rgba(46,204,113,0.1); color: var(--green); }
+                .stat-val { font-size: 1.75rem; font-weight: 700; }
+                .stat-lbl { font-size: 0.8rem; color: var(--text2); }
+                .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+                .card.hl { border: 2px solid var(--accent); position: relative; overflow: hidden; }
+                .card.hl::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--accent), var(--purple), var(--cyan)); }
+                .card-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+                .card-title i { color: var(--accent); }
+                .cat-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+                .cat-item:hover { background: rgba(0,255,209,0.08); }
+                .cat-left { display: flex; align-items: center; gap: 0.75rem; }
+                .cat-dot { width: 8px; height: 8px; border-radius: 50%; }
+                .badge { background: rgba(0,180,216,0.15); color: var(--cyan); font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 10px; }
+                .tree-item { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+                .tree-item:last-child { border: none; }
+                .tree-lbl { font-size: 0.85rem; color: var(--text2); }
+                .tree-lbl strong { color: var(--text); }
+                .tree-badge { font-size: 0.7rem; color: var(--green); background: rgba(46,204,113,0.1); padding: 0.15rem 0.5rem; border-radius: 4px; }
+                .link-item { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; }
+                .link-left { display: flex; align-items: center; gap: 0.5rem; }
+                .link-check { color: var(--green); }
+                .link-url { font-size: 0.8rem; color: var(--cyan); font-family: monospace; }
+                .sync-status { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+                .sync-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px rgba(46,204,113,0.5); }
+                .sync-btn { padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--text2); cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s; }
+                .sync-btn:hover { border-color: var(--accent); color: var(--accent); }
+            </style>
+            </head><body>
+                <h1>Admin Menu Manager</h1>
+                <div class="subtitle">Categories, subcategories, content, sync</div>
+                <div class="stats">
+                    <div class="stat"><div class="stat-head"><div class="stat-icon icon-cyan"><i class="fa-solid fa-tags"></i></div></div><div class="stat-val">${appState.categories.length}</div><div class="stat-lbl">Categorias</div></div>
+                    <div class="stat"><div class="stat-head"><div class="stat-icon icon-green"><i class="fa-solid fa-sitemap"></i></div></div><div class="stat-val">${totalSubs}</div><div class="stat-lbl">Subcategorias</div></div>
+                    <div class="stat"><div class="stat-head"><div class="stat-icon icon-teal"><i class="fa-solid fa-link"></i></div></div><div class="stat-val">${totalSubs}</div><div class="stat-lbl">Links Ativos</div></div>
+                </div>
+                <div class="card hl">
+                    <div class="card-title"><i class="fa-solid fa-sitemap"></i> Gestão de Categorias</div>
+                    ${catItems || '<div style="color:var(--text2);font-size:0.85rem;">Sem categorias. Clica em "Nova Categoria".</div>'}
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fa-solid fa-code-branch"></i> Subcategory Tree</div>
+                    ${treeItems || '<div style="color:var(--text2);font-size:0.85rem;">Sem subcategorias ainda.</div>'}
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fa-solid fa-link"></i> Content Linking</div>
+                    ${linkItems || '<div style="color:var(--text2);font-size:0.85rem;">Sem links configurados.</div>'}
+                </div>
+                <div class="card">
+                    <div class="card-title"><i class="fa-solid fa-rotate"></i> Sync</div>
+                    <div class="sync-status"><div class="sync-dot"></div><span style="font-size:0.85rem;color:var(--green);">Online</span><span style="font-size:0.8rem;color:var(--text2);">Last sync: agora</span></div>
+                    <button class="sync-btn"><i class="fa-solid fa-rotate"></i> Sincronizar</button>
+                </div>
+            </body></html>`;
+        }
+
+        // --- Settings/Editor Logic ---
+
+        function renderEditor() {
+            els.categoriesEditor.innerHTML = '';
+            appState.categories.forEach((cat, cIdx) => {
+                const card = document.createElement('div');
+                card.className = 'editor-card';
+                
+                let iconOptions = ICON_OPTIONS.map(i => 
+                    `<option value="${i.value}" ${cat.icon === i.value ? 'selected' : ''}>${i.emoji} ${i.label}</option>`
+                ).join('');
+
+                let subHtml = '';
+                cat.children.forEach((sub, sIdx) => {
+                    let subIconOptions = ICON_OPTIONS.map(i => 
+                        `<option value="${i.value}" ${sub.icon === i.value ? 'selected' : ''}>${i.emoji} ${i.label}</option>`
+                    ).join('');
+                    
+                    subHtml += `
+                        <div class="sub-item">
+                            <div>${sub.icon ? ICON_OPTIONS.find(io => io.value === sub.icon)?.emoji || '' : '🔗'}</div>
+                            <input class="input-field" value="${sub.name}" onchange="updateSub(${cIdx}, ${sIdx}, 'name', this.value)" placeholder="Nome">
+                            <input class="input-field" value="${sub.link || ''}" onchange="updateSub(${cIdx}, ${sIdx}, 'link', this.value)" placeholder="URL">
+                            <button class="btn btn-danger btn-sm" onclick="deleteSub(${cIdx}, ${sIdx})"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    `;
+                });
+
+                card.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+                        <select class="input-field" style="width:130px;" onchange="updateCat(${cIdx}, 'icon', this.value)">
+                            ${iconOptions}
+                        </select>
+                        <input class="input-field" value="${cat.name}" onchange="updateCat(${cIdx}, 'name', this.value)" placeholder="Nome" style="flex:1;">
+                        <input class="input-field" type="color" value="${cat.color || '#3b82f6'}" onchange="updateCat(${cIdx}, 'color', this.value)" style="width:50px;padding:2px;cursor:pointer;">
+                        <button class="btn btn-danger btn-sm" onclick="deleteCat(${cIdx})"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <input class="input-field" value="${cat.desc || ''}" onchange="updateCat(${cIdx}, 'desc', this.value)" placeholder="Descrição (opcional)" style="margin-bottom:0.5rem;">
+                    <div class="sub-list">${subHtml}</div>
+                    <button class="btn btn-outline btn-sm" style="width:100%;margin-top:0.5rem;height:auto;padding:0.4rem;" onclick="addSub(${cIdx})">
+                        <i class="fa-solid fa-plus"></i> Adicionar Subcategoria
+                    </button>
+                `;
+                els.categoriesEditor.appendChild(card);
+            });
+        }
+
+        window.updateCat = (cIdx, field, value) => {
+            appState.categories[cIdx][field] = value;
+            renderMenu();
+            if (document.querySelector('.menu-item.active[data-page="dashboard"]')) navigateToPage('dashboard');
+        };
+
+        window.deleteCat = (cIdx) => {
+            if (confirm('Eliminar esta categoria e todos os links?')) {
+                appState.categories.splice(cIdx, 1);
+                renderMenu(); renderEditor();
+                navigateToPage('dashboard');
+            }
+        };
+
+        window.addSub = (cIdx) => {
+            appState.categories[cIdx].children.push({ id: Date.now().toString(), name: 'Nova Sub', link: '', icon: 'fa-link' });
+            renderMenu(); renderEditor();
+        };
+
+        window.updateSub = (cIdx, sIdx, field, value) => {
+            appState.categories[cIdx].children[sIdx][field] = value;
+            renderMenu();
+            if (document.querySelector('.menu-item.active[data-page="dashboard"]')) navigateToPage('dashboard');
+        };
+
+        window.deleteSub = (cIdx, sIdx) => {
+            appState.categories[cIdx].children.splice(sIdx, 1);
+            renderMenu(); renderEditor();
+            navigateToPage('dashboard');
+        };
+
+        els.addCategoryBtn.onclick = () => {
+            appState.categories.push({ id: Date.now().toString(), name: 'Nova Categoria', icon: 'fa-folder', color: '#3b82f6', desc: '', link: '#/categories/new', children: [] });
+            renderMenu(); renderEditor();
+            navigateToPage('dashboard');
+        };
+
+        els.newCatBtn.onclick = () => {
+            openSettings();
+            setTimeout(() => els.addCategoryBtn.click(), 300);
+        };
+
+        // --- Export / Import ---
+
+        function doExport() {
+            const data = {
+                version: "2.0",
+                exportedAt: new Date().toISOString(),
+                categories: appState.categories
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'admin-menu-config.json';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        els.exportBtn.onclick = doExport;
+        els.exportBtnHeader.onclick = doExport;
+
+        els.importBtn.onclick = () => els.importInput.click();
+
+        els.importInput.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const imported = JSON.parse(evt.target.result);
+                    if (imported.categories) {
+                        appState.categories = imported.categories;
+                        renderMenu(); renderEditor();
+                        navigateToPage('dashboard');
+                        alert('Configuração importada com sucesso!');
+                    } else {
+                        alert('Ficheiro de configuração inválido.');
+                    }
+                } catch (err) {
+                    alert('Erro ao processar o ficheiro.');
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = '';
+        };
+
+        // --- UI Toggles ---
+
+        function openSettings() {
+            renderEditor();
+            els.settingsPanel.classList.add('open');
+            els.overlay.classList.add('show');
+        }
+
+        function closeSettings() {
+            els.settingsPanel.classList.remove('open');
+            els.overlay.classList.remove('show');
+        }
+
+        els.settingsBtn.onclick = openSettings;
+        els.closeSettings.onclick = closeSettings;
+        els.overlay.onclick = closeSettings;
+
+        els.mobileToggle.onclick = () => els.sidebar.classList.toggle('mobile-open');
+
+        // Init
+        renderMenu();
+        navigateToPage('dashboard');
+    </script>
+</body>
+</html>
+
