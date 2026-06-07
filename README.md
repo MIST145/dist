@@ -16,7 +16,7 @@ Dashboard administrativo com navbar fixa e sidebar multi-nível, construído com
 
 ### Demonstração
 
-🔗 **[Ver online](https://mist145.github.io/NOME-DO-REPO/)**
+🔗 **[Ver online](https://mist145.github.io/dist/)**
 
 ### Estrutura do projeto
 
@@ -98,7 +98,7 @@ Administrative dashboard with a fixed navbar and multi-level sidebar, built with
 
 ### Live Demo
 
-🔗 **[View online](https://mist145.github.io/NOME-DO-REPO/)**
+🔗 **[View online](https://mist145.github.io/dist/)**
 
 ### Project structure
 
